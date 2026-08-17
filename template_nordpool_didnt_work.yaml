@@ -25,8 +25,6 @@ zabbix_export:
       query_fields:
       - name: resolution
         value: '15'
-      - name: vat
-        value: '{$NORDPOOL.VAT}'
       status_codes: '200'
       follow_redirects: 'YES'
       retrieve_mode: BODY
@@ -189,8 +187,6 @@ zabbix_export:
       query_fields:
       - name: resolution
         value: '15'
-      - name: vat
-        value: '{$NORDPOOL.VAT}'
       status_codes: '200'
       follow_redirects: 'YES'
       retrieve_mode: BODY
@@ -353,8 +349,6 @@ zabbix_export:
       query_fields:
       - name: resolution
         value: '15'
-      - name: vat
-        value: '{$NORDPOOL.VAT}'
       status_codes: '200'
       follow_redirects: 'YES'
       retrieve_mode: BODY

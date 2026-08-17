@@ -44,7 +44,7 @@ For each country (`lv`, `lt`, `ee`) the template creates one HTTP master item an
 
 The same keys exist with `[lt]` and `[ee]`.
 
-All price items are stored in **EUR/kWh**. The API exposes prices in **EUR/MWh**, so preprocessing divides the value by `1000`.
+All price items are stored in **EUR/kWh**, **excluding VAT**. The API exposes prices in **EUR/MWh**, so preprocessing divides the value by `1000`. The template intentionally omits the API `vat` query parameter so that the stored series represents the raw Nord Pool market price.
 
 ## Polling and timestamps
 
@@ -65,6 +65,26 @@ This means there is no normal polling interval; checks are scheduled at approxim
 ```
 
 The five-second offset avoids hitting the API exactly on the interval boundary. As a result, the stored `current` price timestamp is a few seconds after the actual market interval start, but each value represents the interval whose `start <= now < end` according to the API timestamps.
+
+## VAT handling
+
+The template stores **VAT-exclusive market prices**.
+
+The `vat` query parameter is deliberately omitted from the HTTP request. Do not configure the request as `vat=false`: live testing showed that the presence of the parameter can result in VAT-inclusive prices.
+
+For example, if the source market price is:
+
+```text
+0.21030 EUR/kWh
+```
+
+a VAT-inclusive value at 21% would be:
+
+```text
+0.254463 EUR/kWh
+```
+
+The template should store the former value. Taxes, supplier margins, distribution charges and other fees should be added separately when calculating the final electricity cost.
 
 ## Precision
 
@@ -95,18 +115,6 @@ https://nordpool.didnt.work
 ```
 
 Change this only if using a mirror or reverse proxy.
-
-### `{$NORDPOOL.VAT}`
-
-Default:
-
-```text
-false
-```
-
-Set to `true` if VAT-inclusive prices are desired.
-
-For energy-cost accounting it is usually better to keep the market price and additional fees/taxes as separate components, so the default is VAT-free.
 
 ## How `current`, `previous` and `next` are selected
 
@@ -177,8 +185,9 @@ with:
 ```text
 country = lv | lt | ee
 resolution = 15
-vat = false (default)
 ```
+
+The template intentionally **does not send the `vat` query parameter**. During live testing, requests where the `vat` parameter was present returned VAT-inclusive values even when its value was `false`. Omitting the parameter returns the Nord Pool market price without VAT.
 
 The preprocessing logic expects the documented `prices[]` array with `start`, `end` and numeric `value` fields.
 
