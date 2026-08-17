@@ -509,6 +509,3 @@ zabbix_export:
     - macro: '{$NORDPOOL.API.URL}'
       value: https://nordpool.didnt.work
       description: Base URL of the Nord Pool price API.
-    - macro: '{$NORDPOOL.VAT}'
-      value: 'false'
-      description: Set to true to request VAT-inclusive prices from the API.
