@@ -9,7 +9,7 @@ The template uses only native Zabbix functionality:
 - JavaScript preprocessing
 - scheduled checks aligned to 15-minute market intervals
 
-No external scripts, cron jobs, `zabbix_sender`, Home Assistant or other middleware are required.
+No external scripts, cron jobs, `zabbix_sender` or other middleware are required.
 
 ## Requirements
 
