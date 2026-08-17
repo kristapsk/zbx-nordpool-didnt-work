@@ -192,7 +192,9 @@ Before publishing a release, it is recommended to verify in a live Zabbix 7.4 in
 
 ## License
 
-Choose a license appropriate for your repository before publishing (for example MIT).
+This repository is licensed under the [MIT License](LICENSE).
+
+The license applies to the Zabbix template, preprocessing logic and repository documentation. It does **not** grant any rights to third-party electricity price data returned by `nordpool.didnt.work` or Nord Pool.
 
 ## Data source
 
