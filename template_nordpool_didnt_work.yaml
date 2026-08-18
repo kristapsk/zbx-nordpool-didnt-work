@@ -1,511 +1,596 @@
 zabbix_export:
   version: '7.4'
   template_groups:
-  - uuid: 0fbe8ad092c34179971203ca32cfe4bb
-    name: Templates/Applications
+    - uuid: 0fbe8ad092c34179971203ca32cfe4bb
+      name: Templates/Applications
   templates:
-  - uuid: 213b70c0c1bf403a966396a87644574a
-    template: Nord Pool prices by didnt.work
-    name: Nord Pool prices by didnt.work
-    description: Fetches 15-minute Nord Pool electricity prices for LV, LT and EE directly from nordpool.didnt.work using Zabbix HTTP agent items and dependent item preprocessing. No external scripts required.
-    vendor:
-      name: Community
-      version: 7.4-2
-    groups:
-    - name: Templates/Applications
-    items:
-    - uuid: a233a559564041d0ac71d19d89c936b0
-      name: 'Nord Pool Latvia: API raw'
-      type: HTTP_AGENT
-      key: nordpool.api.raw[lv]
-      delay: 0;m/15s5
-      history: 1d
-      value_type: TEXT
-      url: '{$NORDPOOL.API.URL}/api/lv/prices'
-      query_fields:
-      - name: resolution
-        value: '15'
-      status_codes: '200'
-      follow_redirects: 'YES'
-      retrieve_mode: BODY
-      request_method: GET
-      output_format: RAW
-      verify_peer: 'YES'
-      verify_host: 'YES'
-      timeout: 10s
-      description: Master HTTP item. Fetches today's 15-minute Nord Pool price payload from nordpool.didnt.work.
+    - uuid: 213b70c0c1bf403a966396a87644574a
+      template: 'Nord Pool prices by didnt.work'
+      name: 'Nord Pool prices by didnt.work'
+      description: 'Fetches 15-minute Nord Pool electricity prices for LV, LT and EE directly from nordpool.didnt.work using Zabbix HTTP agent items and dependent item preprocessing. No external scripts required.'
+      vendor:
+        name: Community
+        version: 7.4-2
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 3980fd3038c14038a5aafcf7b6348ebc
+          name: 'Nord Pool Estonia: API raw'
+          type: HTTP_AGENT
+          key: 'nordpool.api.raw[ee]'
+          delay: 0;m/15s5
+          history: 1d
+          value_type: TEXT
+          description: 'Master HTTP item. Fetches today''s 15-minute Nord Pool price payload from nordpool.didnt.work.'
+          timeout: 10s
+          url: '{$NORDPOOL.API.URL}/api/ee/prices'
+          query_fields:
+            - name: resolution
+              value: '15'
+          verify_peer: 'YES'
+          verify_host: 'YES'
+          tags:
+            - tag: component
+              value: api
+            - tag: country
+              value: EE
+        - uuid: c2db679e92d54f858d702a2e841ed9a2
+          name: 'Nord Pool Lithuania: API raw'
+          type: HTTP_AGENT
+          key: 'nordpool.api.raw[lt]'
+          delay: 0;m/15s5
+          history: 1d
+          value_type: TEXT
+          description: 'Master HTTP item. Fetches today''s 15-minute Nord Pool price payload from nordpool.didnt.work.'
+          timeout: 10s
+          url: '{$NORDPOOL.API.URL}/api/lt/prices'
+          query_fields:
+            - name: resolution
+              value: '15'
+          verify_peer: 'YES'
+          verify_host: 'YES'
+          tags:
+            - tag: component
+              value: api
+            - tag: country
+              value: LT
+        - uuid: a233a559564041d0ac71d19d89c936b0
+          name: 'Nord Pool Latvia: API raw'
+          type: HTTP_AGENT
+          key: 'nordpool.api.raw[lv]'
+          delay: 0;m/15s5
+          history: 1d
+          value_type: TEXT
+          description: 'Master HTTP item. Fetches today''s 15-minute Nord Pool price payload from nordpool.didnt.work.'
+          timeout: 10s
+          url: '{$NORDPOOL.API.URL}/api/lv/prices'
+          query_fields:
+            - name: resolution
+              value: '15'
+          verify_peer: 'YES'
+          verify_host: 'YES'
+          tags:
+            - tag: component
+              value: api
+            - tag: country
+              value: LV
+        - uuid: ae845d3560954518bc4e6bbea63332c6
+          name: 'Nord Pool Estonia: Current price'
+          type: DEPENDENT
+          key: 'nordpool.price.current[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          return p.value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: 14da1749eafc4dec815c188f4ef1f099
+          name: 'Nord Pool Lithuania: Current price'
+          type: DEPENDENT
+          key: 'nordpool.price.current[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          return p.value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: a9afcaf9aa934301abfae695e16b7e8c
+          name: 'Nord Pool Latvia: Current price'
+          type: DEPENDENT
+          key: 'nordpool.price.current[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          return p.value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
+        - uuid: b5b5b5d17ebe40cab5ca422fc0096873
+          name: 'Nord Pool Estonia: Next interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.next[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: 28231232b73d4b44bcde3879f4ac79fe
+          name: 'Nord Pool Lithuania: Next interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.next[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: afc30ab238314c0b8706830aaf4b2157
+          name: 'Nord Pool Latvia: Next interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.next[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
+        - uuid: 9bcfb12c36cd4e93a8e5be12f6e0745e
+          name: 'Nord Pool Estonia: Previous interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.previous[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (-1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: 65210a6926894e97abe5f2b52b081bcd
+          name: 'Nord Pool Lithuania: Previous interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.previous[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (-1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: f3471301464b42edab6c184384a0c755
+          name: 'Nord Pool Latvia: Previous interval price'
+          type: DEPENDENT
+          key: 'nordpool.price.previous[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  var now = Date.now();
+                  for (var i = 0; i < o.prices.length; i++) {
+                      var p = o.prices[i];
+                      if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {
+                          var j = i + (-1);
+                          if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';
+                          return o.prices[j].value / 1000.0;
+                      }
+                  }
+                  throw 'No price interval contains current time';
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
+        - uuid: c8cae37df6cb4f4b9c5d6ce32f9fc7d9
+          name: 'Nord Pool Estonia: Today average price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.avg[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: 0277cf116d8b49d49deda3a31995a974
+          name: 'Nord Pool Lithuania: Today average price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.avg[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: eacf691f8dd64f50a04ec1bdb9c0cf71
+          name: 'Nord Pool Latvia: Today average price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.avg[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
+        - uuid: 6c39f3bc2d624804b78e68c144a3a3af
+          name: 'Nord Pool Estonia: Today maximum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.max[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: fe5934b5091c4c58b49c384594005203
+          name: 'Nord Pool Lithuania: Today maximum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.max[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: a648b17af6704dab88971542b35fe369
+          name: 'Nord Pool Latvia: Today maximum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.max[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
+        - uuid: a85003d1da5f49f3bd550842b7de1088
+          name: 'Nord Pool Estonia: Today minimum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.min[ee]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[ee]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: EE
+        - uuid: 3890a501ffd14caabe1e3f3e5a45eeab
+          name: 'Nord Pool Lithuania: Today minimum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.min[lt]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lt]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LT
+        - uuid: fccaeccc9cb841de86e583e2601332ef
+          name: 'Nord Pool Latvia: Today minimum price'
+          type: DEPENDENT
+          key: 'nordpool.price.today.min[lv]'
+          history: 90d
+          value_type: FLOAT
+          units: EUR/kWh
+          description: 'Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var o = JSON.parse(value);
+                  if (!o.prices || !o.prices.length) throw 'No prices in payload';
+                  var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: 'nordpool.api.raw[lv]'
+          tags:
+            - tag: component
+              value: price
+            - tag: country
+              value: LV
       tags:
-      - tag: component
-        value: api
-      - tag: country
-        value: LV
-    - uuid: a9afcaf9aa934301abfae695e16b7e8c
-      name: 'Nord Pool Latvia: Current price'
-      type: DEPENDENT
-      key: nordpool.price.current[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        return p.value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: f3471301464b42edab6c184384a0c755
-      name: 'Nord Pool Latvia: Previous interval price'
-      type: DEPENDENT
-      key: nordpool.price.previous[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (-1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: afc30ab238314c0b8706830aaf4b2157
-      name: 'Nord Pool Latvia: Next interval price'
-      type: DEPENDENT
-      key: nordpool.price.next[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: eacf691f8dd64f50a04ec1bdb9c0cf71
-      name: 'Nord Pool Latvia: Today average price'
-      type: DEPENDENT
-      key: nordpool.price.today.avg[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: fccaeccc9cb841de86e583e2601332ef
-      name: 'Nord Pool Latvia: Today minimum price'
-      type: DEPENDENT
-      key: nordpool.price.today.min[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: a648b17af6704dab88971542b35fe369
-      name: 'Nord Pool Latvia: Today maximum price'
-      type: DEPENDENT
-      key: nordpool.price.today.max[lv]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lv]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LV
-    - uuid: c2db679e92d54f858d702a2e841ed9a2
-      name: 'Nord Pool Lithuania: API raw'
-      type: HTTP_AGENT
-      key: nordpool.api.raw[lt]
-      delay: 0;m/15s5
-      history: 1d
-      value_type: TEXT
-      url: '{$NORDPOOL.API.URL}/api/lt/prices'
-      query_fields:
-      - name: resolution
-        value: '15'
-      status_codes: '200'
-      follow_redirects: 'YES'
-      retrieve_mode: BODY
-      request_method: GET
-      output_format: RAW
-      verify_peer: 'YES'
-      verify_host: 'YES'
-      timeout: 10s
-      description: Master HTTP item. Fetches today's 15-minute Nord Pool price payload from nordpool.didnt.work.
-      tags:
-      - tag: component
-        value: api
-      - tag: country
-        value: LT
-    - uuid: 14da1749eafc4dec815c188f4ef1f099
-      name: 'Nord Pool Lithuania: Current price'
-      type: DEPENDENT
-      key: nordpool.price.current[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        return p.value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: 65210a6926894e97abe5f2b52b081bcd
-      name: 'Nord Pool Lithuania: Previous interval price'
-      type: DEPENDENT
-      key: nordpool.price.previous[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (-1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: 28231232b73d4b44bcde3879f4ac79fe
-      name: 'Nord Pool Lithuania: Next interval price'
-      type: DEPENDENT
-      key: nordpool.price.next[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: 0277cf116d8b49d49deda3a31995a974
-      name: 'Nord Pool Lithuania: Today average price'
-      type: DEPENDENT
-      key: nordpool.price.today.avg[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: 3890a501ffd14caabe1e3f3e5a45eeab
-      name: 'Nord Pool Lithuania: Today minimum price'
-      type: DEPENDENT
-      key: nordpool.price.today.min[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: fe5934b5091c4c58b49c384594005203
-      name: 'Nord Pool Lithuania: Today maximum price'
-      type: DEPENDENT
-      key: nordpool.price.today.max[lt]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[lt]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: LT
-    - uuid: 3980fd3038c14038a5aafcf7b6348ebc
-      name: 'Nord Pool Estonia: API raw'
-      type: HTTP_AGENT
-      key: nordpool.api.raw[ee]
-      delay: 0;m/15s5
-      history: 1d
-      value_type: TEXT
-      url: '{$NORDPOOL.API.URL}/api/ee/prices'
-      query_fields:
-      - name: resolution
-        value: '15'
-      status_codes: '200'
-      follow_redirects: 'YES'
-      retrieve_mode: BODY
-      request_method: GET
-      output_format: RAW
-      verify_peer: 'YES'
-      verify_host: 'YES'
-      timeout: 10s
-      description: Master HTTP item. Fetches today's 15-minute Nord Pool price payload from nordpool.didnt.work.
-      tags:
-      - tag: component
-        value: api
-      - tag: country
-        value: EE
-    - uuid: ae845d3560954518bc4e6bbea63332c6
-      name: 'Nord Pool Estonia: Current price'
-      type: DEPENDENT
-      key: nordpool.price.current[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        return p.value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    - uuid: 9bcfb12c36cd4e93a8e5be12f6e0745e
-      name: 'Nord Pool Estonia: Previous interval price'
-      type: DEPENDENT
-      key: nordpool.price.previous[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (-1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    - uuid: b5b5b5d17ebe40cab5ca422fc0096873
-      name: 'Nord Pool Estonia: Next interval price'
-      type: DEPENDENT
-      key: nordpool.price.next[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - "var o = JSON.parse(value);\nvar now = Date.now();\nfor (var i = 0; i < o.prices.length; i++) {\n    var p = o.prices[i];\n    if (Date.parse(p.start) <= now && now < Date.parse(p.end)) {\n        var j = i + (1);\n        if (j < 0 || j >= o.prices.length) throw 'Requested adjacent interval is outside current day payload';\n        return o.prices[j].value / 1000.0;\n    }\n}\nthrow 'No price interval contains current time';"
-        error_handler: DISCARD_VALUE
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    - uuid: c8cae37df6cb4f4b9c5d6ce32f9fc7d9
-      name: 'Nord Pool Estonia: Today average price'
-      type: DEPENDENT
-      key: nordpool.price.today.avg[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var s=0; for (var i=0;i<o.prices.length;i++) s += o.prices[i].value; return (s/o.prices.length)/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    - uuid: a85003d1da5f49f3bd550842b7de1088
-      name: 'Nord Pool Estonia: Today minimum price'
-      type: DEPENDENT
-      key: nordpool.price.today.min[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value < x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    - uuid: 6c39f3bc2d624804b78e68c144a3a3af
-      name: 'Nord Pool Estonia: Today maximum price'
-      type: DEPENDENT
-      key: nordpool.price.today.max[ee]
-      history: 90d
-      value_type: FLOAT
-      units: EUR/kWh
-      description: Price is converted from API EUR/MWh to EUR/kWh by dividing by 1000. Stored as Zabbix Numeric (float).
-      preprocessing:
-      - type: JAVASCRIPT
-        parameters:
-        - 'var o = JSON.parse(value);
-
-          if (!o.prices || !o.prices.length) throw ''No prices in payload'';
-
-          var x=o.prices[0].value; for (var i=1;i<o.prices.length;i++) if (o.prices[i].value > x) x=o.prices[i].value; return x/1000.0;'
-      - type: DISCARD_UNCHANGED_HEARTBEAT
-        parameters:
-        - 1d
-      master_item:
-        key: nordpool.api.raw[ee]
-      tags:
-      - tag: component
-        value: price
-      - tag: country
-        value: EE
-    tags:
-    - tag: class
-      value: energy
-    - tag: target
-      value: nordpool
-    macros:
-    - macro: '{$NORDPOOL.API.URL}'
-      value: https://nordpool.didnt.work
-      description: Base URL of the Nord Pool price API.
+        - tag: class
+          value: energy
+        - tag: target
+          value: nordpool
+      macros:
+        - macro: '{$NORDPOOL.API.URL}'
+          value: 'https://nordpool.didnt.work'
+          description: 'Base URL of the Nord Pool price API.'
+  graphs:
+    - uuid: 03c9f241ae6e41d0adcac5e06f8117d9
+      name: 'Nord Pool current prices'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nord Pool prices by didnt.work'
+            key: 'nordpool.price.current[lt]'
+        - sortorder: '1'
+          color: 5B0E0E
+          calc_fnc: ALL
+          item:
+            host: 'Nord Pool prices by didnt.work'
+            key: 'nordpool.price.current[lv]'
+        - sortorder: '2'
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: 'Nord Pool prices by didnt.work'
+            key: 'nordpool.price.current[ee]'
